@@ -1,56 +1,60 @@
-# License Plate Extraction with YOLOv10 and PaddleOCR & Save Data to SQL Database
+# License Plate Detection + OCR (YOLOv10 + PaddleOCR)
 
-## How to run:
+Detects license plates in a video/image using YOLOv10, reads plate text with PaddleOCR, and saves results to:
 
-```bash
-git clone https://github.com/THU-MIG/yolov10.git
+- An annotated output video/image in `output/`
+- JSON in `json/` (per-interval + cumulative)
+- SQLite database `licensePlatesDatabase.db`
+
+## How to run (Windows)
+
+### 0) Prerequisites
+
+- Python 3.11 (recommended)
+- Git
+
+### 1) Clone YOLOv10 into this project
+
+From the project root:
+
+```powershell
+git clone https://github.com/THU-MIG/yolov10.git yolov10
 ```
 
-```bash
-conda create -n cvproj python=3.11 -y
+### 2) Create + activate a virtual environment
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-```bash
-conda activate cvproj
-```
+### 3) Install dependencies
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-```bash
-cd yolov10
-```
+### 4) Provide inputs
 
-```bash
-pip install -e .
-```
+- Put your model weights at `weights/best.pt`
+- Put your input video/image under `data/`
+- Update `VIDEO_PATH` in `main.py` to point to your file
 
-```bash
-cd ..
-```
+### 5) Run
 
-```bash
-python sqldb.py
-```
-
-```bash
+```powershell
 python main.py
 ```
 
-## Error Fixed
+You can also run without activating the venv:
 
-```bash
-pip uninstall numpy
+```powershell
+.\.venv\Scripts\python.exe .\main.py
 ```
 
-```bash
-pip install numpy==1.26.4
-```
+## Live preview controls
 
-
-### sqlite viewer:
-
-https://inloop.github.io/sqlite-viewer/
+- Press `c` to close the live preview window (processing continues)
+- Press `q` to stop processing early
 
 

@@ -5,7 +5,6 @@ __pycache__/
 
 # C extensions
 *.so
-yolov10/*
 # Distribution / packaging
 .Python
 build/
@@ -129,6 +128,25 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Project artifacts (do not commit)
+output/
+licensePlatesDatabase.db
+json/output_*.json
+json/LicensePlateData.json
+weights/*.pt
+
+# Input media (keep only placeholders)
+data/*
+!data/.gitkeep
+
+# Local YOLOv10 clone (clone separately per README)
+yolov10/
+
+# Project outputs
+output/
+json/output_*.json
+licensePlatesDatabase.db
 
 # Spyder project settings
 .spyderproject

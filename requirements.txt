@@ -1,4 +1,10 @@
-huggingface-hub
+numpy==1.26.4
+# PaddleOCR/PaddleX OCR pipeline expects OpenCV contrib on Windows.
+opencv-contrib-python==4.10.0.84
+
+# Install YOLOv10 from the local folder (clone into ./yolov10 first)
+-e ./yolov10
+
 paddleocr
 paddlepaddle
-db-sqlite3
+huggingface-hub
