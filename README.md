@@ -69,4 +69,11 @@ You can also run without activating the venv:
 - Press `c` to close the live preview window (processing continues)
 - Press `q` to stop processing early
 
+## Notebook (training)
+
+This repo also includes a training notebook used on Kaggle to train the custom YOLOv10 model that produced `best.pt`.
+
+- Notebook path: `notebook/license-plate-detection-yolov10-custom-model-train.ipynb`
+- It covers: cloning YOLOv10, installing dependencies, downloading a dataset, training, and running sample predictions.
+
 
