@@ -1,3 +1,5 @@
+## Demo Video: https://drive.google.com/file/d/1XnvV-ZSvd7zdES0NtLIx4ATXq9iksnxh/view?usp=sharing
+
 # License Plate Detection + OCR (YOLOv10 + PaddleOCR)
 
 ## About this project
