@@ -48,7 +48,7 @@ pip install -r requirements.txt
 
 ### 4) Provide inputs
 
-- Put your model weights at `weights/best.pt`
+- Put your model weights at `weights/best.pt` (custom-trained by me on Kaggle)
 - Put your input video/image under `data/`
 - Update `VIDEO_PATH` in `main.py` to point to your file
 
