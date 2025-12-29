@@ -1,5 +1,17 @@
 # License Plate Detection + OCR (YOLOv10 + PaddleOCR)
 
+## About this project
+
+This repository is the core of a Vehicle License Plate Recognition workflow that can be used as the backend for a parking system.
+It processes a video (CCTV/phone recording) or a single image, detects license plates with a YOLOv10 model (`best.pt`), reads the
+plate text using PaddleOCR, and stores the recognized plates with timestamps.
+
+Typical use cases:
+
+- Parking entry/exit logging (store plate + time range)
+- Traffic/camera footage indexing by plate number
+- Basic audit trail using a local SQLite database
+
 Detects license plates in a video/image using YOLOv10, reads plate text with PaddleOCR, and saves results to:
 
 - An annotated output video/image in `output/`
