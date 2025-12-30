@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-VIDEO_PATH = BASE_DIR / "data" / "gray1.jpg"
+VIDEO_PATH = BASE_DIR / "data" / "PhotoshopExtension_Image.png"  # Update with your video/image path
 WEIGHTS_PATH = BASE_DIR / "weights" / "best.pt"
 YOLOV10_DIR = BASE_DIR / "yolov10"
 JSON_DIR = BASE_DIR / "json"
@@ -19,6 +19,93 @@ DB_PATH = BASE_DIR / "licensePlatesDatabase.db"
 
 # Class Names
 className = ["License"]
+
+# Bangla to English transliteration mappings
+BANGLA_DIGITS = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+}
+
+# Common Bangla words on license plates -> English
+BANGLA_WORDS = {
+    'ঢাকা': 'Dhaka',
+    'মেট্রো': 'Metro',
+    'চট্টগ্রাম': 'Chittagong',
+    'রাজশাহী': 'Rajshahi',
+    'খুলনা': 'Khulna',
+    'সিলেট': 'Sylhet',
+    'বরিশাল': 'Barisal',
+    'রংপুর': 'Rangpur',
+    'ময়মনসিংহ': 'Mymensingh',
+    'গাজীপুর': 'Gazipur',
+    'নারায়ণগঞ্জ': 'Narayanganj',
+    'কুমিল্লা': 'Comilla',
+    'গ': 'Ga',
+    'ক': 'Ka',
+    'খ': 'Kha',
+    'ঘ': 'Gha',
+    'চ': 'Cha',
+    'ছ': 'Chha',
+    'জ': 'Ja',
+    'ঝ': 'Jha',
+    'ট': 'Ta',
+    'ঠ': 'Tha',
+    'ড': 'Da',
+    'ঢ': 'Dha',
+    'ণ': 'Na',
+    'ত': 'Ta',
+    'থ': 'Tha',
+    'দ': 'Da',
+    'ধ': 'Dha',
+    'ন': 'Na',
+    'প': 'Pa',
+    'ফ': 'Fa',
+    'ব': 'Ba',
+    'ভ': 'Bha',
+    'ম': 'Ma',
+    'য': 'Ya',
+    'র': 'Ra',
+    'ল': 'La',
+    'শ': 'Sha',
+    'ষ': 'Sha',
+    'স': 'Sa',
+    'হ': 'Ha',
+    'অ': 'A',
+    'আ': 'Aa',
+    'ই': 'I',
+    'ঈ': 'Ii',
+    'উ': 'U',
+    'ঊ': 'Uu',
+    'এ': 'E',
+    'ঐ': 'Oi',
+    'ও': 'O',
+    'ঔ': 'Ou',
+}
+
+
+def bangla_to_english(text):
+    """Convert Bangla text to English transliteration."""
+    if not text:
+        return ""
+    
+    result = text
+    
+    # First replace known words (longer matches first)
+    for bangla, english in sorted(BANGLA_WORDS.items(), key=lambda x: -len(x[0])):
+        result = result.replace(bangla, english)
+    
+    # Then replace Bangla digits
+    for bangla_digit, english_digit in BANGLA_DIGITS.items():
+        result = result.replace(bangla_digit, english_digit)
+    
+    # Remove any remaining Bangla characters (vowel signs, etc.)
+    # Keep only ASCII alphanumeric, space, hyphen
+    cleaned = ""
+    for char in result:
+        if char.isascii() and (char.isalnum() or char in ' -'):
+            cleaned += char
+    
+    return cleaned.strip()
 
 
 def _ensure_bgr(frame):
@@ -39,6 +126,7 @@ def _ensure_bgr(frame):
 
 
 def paddle_ocr(frame, x1, y1, x2, y2):
+    """OCR for license plates - supports both English and Bangla with English output."""
     h, w = frame.shape[:2]
     x1 = max(0, min(int(x1), w - 1))
     x2 = max(0, min(int(x2), w))
@@ -47,34 +135,64 @@ def paddle_ocr(frame, x1, y1, x2, y2):
     if x2 <= x1 or y2 <= y1:
         return ""
 
-    frame = frame[y1:y2, x1:x2]
-    result = ocr.predict(frame)
-    text = ""
-    best_score = 0
-    if result and isinstance(result, list):
-        r0 = result[0] if result else {}
-        texts = r0.get("rec_texts", []) if isinstance(r0, dict) else []
-        scores = r0.get("rec_scores", []) if isinstance(r0, dict) else []
-        for t, s in zip(texts, scores):
-            if s is None:
-                s = 0
-            else:
-                try:
-                    if isinstance(s, float) and math.isnan(s):
-                        s = 0
-                except Exception:
-                    s = 0
-            if s > best_score:
-                best_score = s
-                text = t
-    if best_score * 100 < 60:
-        text = ""
-    pattern = re.compile(r'[\W]')
-    text = pattern.sub('', text)
-    text = text.replace("???", "")
-    text = text.replace("O", "0")
-    text = text.replace("粤", "")
-    return str(text)
+    cropped = frame[y1:y2, x1:x2]
+    
+    # Preprocess: resize if too small
+    import cv2
+    min_height = 50
+    if cropped.shape[0] < min_height:
+        scale = min_height / cropped.shape[0]
+        cropped = cv2.resize(cropped, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    
+    # Run EasyOCR
+    try:
+        results = ocr_reader.readtext(cropped)
+        if not results:
+            return ""
+        
+        # Filter results by confidence and minimum text length
+        valid_texts = []
+        for (bbox, text, confidence) in results:
+            text = text.strip()
+            # Skip very short texts (likely noise) or low confidence
+            if len(text) >= 2 and confidence >= 0.4:
+                valid_texts.append((text, confidence, bbox))
+        
+        if not valid_texts:
+            return ""
+        
+        # If multiple detections, pick the one with best confidence AND reasonable length
+        # License plates typically have 5-10 characters
+        best_text = ""
+        best_score = 0
+        
+        for text, conf, bbox in valid_texts:
+            # Score = confidence * length bonus (prefer longer, more complete reads)
+            length_bonus = min(len(text) / 6.0, 1.5)  # Bonus for plates with 6+ chars
+            score = conf * length_bonus
+            if score > best_score:
+                best_score = score
+                best_text = text
+        
+        # Convert Bangla to English if Bangla characters detected
+        has_bangla = any('\u0980' <= c <= '\u09FF' for c in best_text)
+        if has_bangla:
+            best_text = bangla_to_english(best_text)
+        
+        # Clean up: keep only alphanumeric and spaces
+        cleaned = ""
+        for char in best_text:
+            if char.isalnum() or char == ' ':
+                cleaned += char
+        
+        # Remove extra spaces and uppercase
+        cleaned = " ".join(cleaned.split()).upper()
+        
+        return cleaned
+        
+    except Exception as e:
+        print(f"OCR error: {e}")
+        return ""
 
 
 
@@ -156,14 +274,18 @@ def main():
 
     preview_window = "Live Preview"
     preview_enabled = True
+    
+    # Create resizable preview window
+    cv2.namedWindow(preview_window, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(preview_window, 960, 540)  # Default size (can be resized by user)
 
-    # PaddleOCR 3.x (via PaddleX) checks model hoster connectivity at import/init time.
-    os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+    # Allow duplicate OpenMP libraries
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-    from paddleocr import PaddleOCR
+    import easyocr
+    import torch
 
-    global ocr
+    global ocr_reader
 
     if not VIDEO_PATH.exists():
         raise FileNotFoundError(
@@ -176,8 +298,19 @@ def main():
             "Place your trained weights at weights/best.pt"
         )
 
-    # Initialize OCR and model inside main() so importing this file doesn't run heavy side effects.
-    ocr = PaddleOCR(use_textline_orientation=True)
+    # Check for GPU availability (RTX 5060Ti or any CUDA GPU)
+    use_gpu = torch.cuda.is_available()
+    if use_gpu:
+        gpu_name = torch.cuda.get_device_name(0)
+        print(f"GPU detected: {gpu_name}")
+        print(f"CUDA version: {torch.version.cuda}")
+    else:
+        print("No GPU detected, falling back to CPU")
+    
+    # Initialize EasyOCR for both English and Bangla license plates
+    print(f"Initializing EasyOCR (English + Bangla) on {'GPU' if use_gpu else 'CPU'}...")
+    ocr_reader = easyocr.Reader(['en', 'bn'], gpu=use_gpu)
+    print("EasyOCR ready! Supports English and Bangla plates.")
 
     # PyTorch >= 2.6 defaults `torch.load(..., weights_only=True)` which can block
     # Ultralytics checkpoints unless the model class is allowlisted.
@@ -310,6 +443,7 @@ def main():
             # Controls:
             # - Press 'c' to close the preview window and keep processing.
             # - Press 'q' to quit processing early.
+            # - For images: Press any key to continue after viewing.
             if preview_enabled:
                 cv2.imshow(preview_window, frame)
 
@@ -320,7 +454,14 @@ def main():
                 except Exception:
                     preview_enabled = False
 
-                key = cv2.waitKey(1) & 0xFF
+                # For images: wait longer so user can see the result
+                # For videos: quick wait to keep playback smooth
+                if is_image:
+                    print("\n[Preview] Press any key to close, or 'q' to quit...")
+                    key = cv2.waitKey(0) & 0xFF  # Wait indefinitely for image
+                else:
+                    key = cv2.waitKey(1) & 0xFF
+                    
                 if key == ord('c'):
                     preview_enabled = False
                     try:
