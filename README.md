@@ -57,6 +57,7 @@ pip install -r requirements.txt
 ### 5) Run
 
 ```powershell
+sqldb.py
 python main.py
 ```
 
@@ -78,4 +79,4 @@ This repo also includes a training notebook used on Kaggle to train the custom Y
 - Notebook path: `notebook/license-plate-detection-yolov10-custom-model-train.ipynb`
 - It covers: cloning YOLOv10, installing dependencies, downloading a dataset, training, and running sample predictions.
 
-https://inloop.github.io/sqlite-viewer/
+upload licensePlatesDatabase.db on https://inloop.github.io/sqlite-viewer/
